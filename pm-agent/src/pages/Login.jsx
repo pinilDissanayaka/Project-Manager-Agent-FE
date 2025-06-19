@@ -1,16 +1,8 @@
-import React, { useState } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  TextField, 
-  Button, 
-  Paper, 
-  Divider, 
-  Alert 
-} from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Container, Typography, TextField, Button, Paper, Divider, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmail, signInWithGoogle } from '../utils/firebaseUtils';
+import axios from 'axios';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
@@ -18,39 +10,58 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { currentUser ,setCurrentUser} = useAuth();
   const navigate = useNavigate();
-  const { currentUser } = useAuth();
 
-  // Redirect if already logged in
-  React.useEffect(() => {
+  // Redirect to /chat if already logged in
+  useEffect(() => {
+    console.log('Current User:', currentUser);
     if (currentUser) {
-      navigate('/');
+      navigate('/chat', { replace: true });
     }
   }, [currentUser, navigate]);
 
-  const handleEmailLogin = async (e) => {
-    e.preventDefault();
-    
+  // Google Login Success
+  const handleGoogleLoginSuccess = async (response) => {
     try {
       setError('');
       setLoading(true);
-      await signInWithEmail(email, password);
-      navigate('/');
+
+      // Send the Google OAuth token to the backend for validation
+      const res = await axios.post('http://localhost:8000/auth/google', {
+        credential: response.credential,
+      });
+
+      // Store the returned JWT token
+      localStorage.setItem('access_token', res.data.access_token);
+      setCurrentUser(res.data.user);
+      console.log('Login successful:', res.data.user);
+      console.log('User data:', currentUser);
+
+      // Redirect to the chat page
+      navigate('/chat', { replace: true });
     } catch (error) {
-      setError('Failed to sign in: ' + error.message);
+      setError('Failed to sign in with Google: ' + error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  // Google Login Failure
+  const handleGoogleLoginFailure = (error) => {
+    setError('Google Login Failed: ' + error.message);
+  };
+
+  // Email & password login (optional)
+  const handleEmailLogin = async (e) => {
+    e.preventDefault();
     try {
       setError('');
       setLoading(true);
-      await signInWithGoogle();
-      navigate('/');
+      // Handle email login logic here
+      navigate('/chat');
     } catch (error) {
-      setError('Failed to sign in with Google: ' + error.message);
+      setError('Failed to sign in: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -105,7 +116,7 @@ const Login = () => {
           <Typography variant="h4" component="h1" gutterBottom>
             Project Manager
           </Typography>
-          
+
           <Typography variant="body1" sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.7)' }}>
             Sign in to access your projects
           </Typography>
@@ -116,6 +127,7 @@ const Login = () => {
             </Alert>
           )}
 
+          {/* Optional: Email/password form */}
           <Box component="form" onSubmit={handleEmailLogin} sx={{ width: '100%' }}>
             <TextField
               margin="normal"
@@ -174,25 +186,23 @@ const Login = () => {
 
           <Divider sx={{ width: '100%', my: 2, color: 'rgba(255, 255, 255, 0.5)' }}>OR</Divider>
 
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={handleGoogleLogin}
-            disabled={loading}
-            sx={{
-              color: 'white',
-              borderColor: 'rgba(255, 255, 255, 0.5)',
-              '&:hover': {
-                borderColor: 'white',
-              },
-            }}
+          {/* Google Login Button */}
+          <GoogleLogin
+            onSuccess={handleGoogleLoginSuccess}
+            onError={handleGoogleLoginFailure}
+            useOneTap
+            theme="filled_blue"
+            shape="pill"
+            width="auto"
+            size="large"
           >
             Sign In with Google
-          </Button>
+          </GoogleLogin>
         </Paper>
       </Container>
     </Box>
   );
 };
 
-export default Login; 
+export default Login;
+

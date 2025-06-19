@@ -64,9 +64,12 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route element={<ProtectedRoute />}>
-              <Route path="/" element={<Chat />} />
+              <Route path="/chat" element={<Chat />} />
             </Route>
             <Route path="*" element={<Navigate to="/" />} />
+
+            <Route path="/" element={<Navigate to="/login" />} />
+            <Route path="*" element={<Navigate to="/login" />} />
           </Routes>
         </Router>
       </AuthProvider>

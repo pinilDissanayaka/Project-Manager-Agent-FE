@@ -1,70 +1,33 @@
-import { auth } from '../config/firebase';
+import React from 'react';
+import { GoogleLogin } from '@react-oauth/google';
+import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const apiUrl = 'http://localhost:8000/auth/google';  // Your FastAPI backend URL
 
-/**
- * Fetch wrapper with authentication token
- * @param {string} endpoint - API endpoint
- * @param {Object} options - Fetch options
- * @returns {Promise} - Fetch promise
- */
-export const fetchWithAuth = async (endpoint, options = {}) => {
-  try {
-    const user = auth.currentUser;
-    let headers = { 'Content-Type': 'application/json', ...options.headers };
-    
-    if (user) {
-      const token = await user.getIdToken();
-      headers.Authorization = `Bearer ${token}`;
-    }
-    
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers
+const handleLoginSuccess = (response) => {
+  // Send the Google token to the FastAPI backend for verification
+  axios
+    .post(apiUrl, { credential: response.credential })
+    .then((res) => {
+      console.log('Login successful:', res.data);
+      // Store the access token in localStorage for subsequent requests
+      localStorage.setItem('access_token', res.data.access_token);
+    })
+    .catch((error) => {
+      console.error('Login error:', error);
     });
-    
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
-  }
 };
 
-/**
- * GET request helper
- */
-export const get = (endpoint) => fetchWithAuth(endpoint);
+const handleLoginFailure = (error) => {
+  console.error('Google Login Failed:', error);
+};
 
-/**
- * POST request helper
- */
-export const post = (endpoint, data) => fetchWithAuth(endpoint, {
-  method: 'POST',
-  body: JSON.stringify(data)
-});
-
-/**
- * PUT request helper
- */
-export const put = (endpoint, data) => fetchWithAuth(endpoint, {
-  method: 'PUT',
-  body: JSON.stringify(data)
-});
-
-/**
- * DELETE request helper
- */
-export const del = (endpoint) => fetchWithAuth(endpoint, {
-  method: 'DELETE'
-});
-
-export default {
-  get,
-  post,
-  put,
-  delete: del
-}; 
+return (
+  <div>
+    <h1>Google Login in React with FastAPI Backend</h1>
+    <GoogleLogin
+      onSuccess={handleLoginSuccess}
+      onError={handleLoginFailure}
+    />
+  </div>
+);

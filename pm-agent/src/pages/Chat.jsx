@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Container, Typography, Paper, Button, Grid, Menu, MenuItem, IconButton } from '@mui/material';
+import { Box, Container, Typography, Paper, Button, Grid, Menu, MenuItem, IconButton, CircularProgress } from '@mui/material';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -16,18 +16,14 @@ const Chat = () => {
   const [uploadModalTitle, setUploadModalTitle] = useState('');
   const [uploadFolder, setUploadFolder] = useState('');
   const [anchorEl, setAnchorEl] = useState(null);
+  const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const { currentUser } = useAuth();
   const navigate = useNavigate();
 
   // Handle settings menu
-  const handleSettingsClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleSettingsClose = () => {
-    setAnchorEl(null);
-  };
+  const handleSettingsClick = (event) => setAnchorEl(event.currentTarget);
+  const handleSettingsClose = () => setAnchorEl(null);
 
   const handleLogout = async () => {
     try {
@@ -41,82 +37,146 @@ const Chat = () => {
 
   // Initial AI greeting message
   useEffect(() => {
-    const welcomeMessage = {
+    setMessages([{
       text: "Hello! I'm your AI project management assistant. I can help you track progress, analyze weekly updates, and manage your projects. How can I assist you today?",
       timestamp: new Date().getTime(),
-    };
-    setMessages([welcomeMessage]);
+      isUser: false,
+    }]);
   }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // Send message to FastAPI backend
+  const handleSendMessage = async (messageText) => {
+    if (!currentUser) {
+      setMessages((prev) => [
+        ...prev,
+        { text: 'You must be logged in to chat.', isUser: false, timestamp: new Date().getTime() },
+      ]);
+      return;
+    }
 
-  const handleSendMessage = (messageText) => {
-    // Add user message
+    // Add user message to UI
     const userMessage = {
       text: messageText,
-      timestamp: new Date().getTime(),
       isUser: true,
+      timestamp: new Date().getTime(),
     };
     setMessages((prev) => [...prev, userMessage]);
+    setLoading(true);
 
-    // Simulate AI response (in a real app, you would call an API)
-    setTimeout(() => {
-      const aiResponse = {
-        text: `I'm analyzing your request: "${messageText}".\n\nI'll help you with this task. What additional details can you provide?`,
+    try {
+      const token = localStorage.getItem('access_token');
+      const payload = {
+        user_id: currentUser.uid,
+        message: messageText,
+        thread_id: null,
+      };
+
+      const res = await fetch('http://localhost:8000/chat/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || 'Failed to get response from chat API');
+      }
+
+      const data = await res.json();
+
+      // Add AI response to UI
+      const aiMessage = {
+        text: data.response,
+        isUser: false,
         timestamp: new Date().getTime(),
       };
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 1000);
+      setMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        { text: 'Error: ' + error.message, isUser: false, timestamp: new Date().getTime() },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Open modal for weekly update upload
   const handleWeeklyUpdate = () => {
     setUploadModalTitle('Upload Weekly Update');
     setUploadFolder('weekly-updates');
     setUploadModalOpen(true);
   };
 
+  // Open modal for solution document upload
   const handleSolutionDoc = () => {
     setUploadModalTitle('Upload Solution Document');
     setUploadFolder('solution-docs');
     setUploadModalOpen(true);
   };
 
-  const handleUploadSuccess = (fileData) => {
-    // Create message with file info
-    const fileMessage = {
-      text: `Uploaded file: ${fileData.name}\nType: ${fileData.type}\nSize: ${(fileData.size / 1024).toFixed(2)} KB`,
-      timestamp: new Date().getTime(),
-      isUser: true,
-      fileData: fileData,
-    };
-    setMessages((prev) => [...prev, fileMessage]);
-
-    // Simulate AI response to file upload
-    setTimeout(() => {
-      let responseText = '';
-      
-      if (uploadFolder === 'weekly-updates') {
-        responseText = `I've received your weekly update file "${fileData.name}".\n\nWould you like me to extract key information from this document or help you track specific tasks from it?`;
-      } else if (uploadFolder === 'solution-docs') {
-        responseText = `I've received your solution document "${fileData.name}".\n\nI can help you analyze this document or create additional documentation based on its contents. What would you like to do next?`;
-      } else {
-        responseText = `I've received your file "${fileData.name}".\n\nHow would you like me to help you with this file?`;
-      }
-      
-      const aiResponse = {
-        text: responseText,
-        timestamp: new Date().getTime(),
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 1000);
+  // Handle successful file upload
+ const handleUploadSuccess = async (fileData) => {
+  // Show file info in chat
+  const fileMessage = {
+    text: `Uploaded file: ${fileData.name}\nType: ${fileData.type}\nSize: ${(fileData.size / 1024).toFixed(2)} KB`,
+    timestamp: new Date().getTime(),
+    isUser: true,
+    fileData: fileData,
   };
+  setMessages((prev) => [...prev, fileMessage]);
+
+  // Only upload if it's a weekly update
+  if (uploadFolder === 'weekly-updates') {
+    const formData = new FormData();
+    formData.append("user_id", currentUser.uid);
+    formData.append("file", fileData);
+
+    try {
+      const res = await fetch("http://localhost:8000/upload_daily_update", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      // Optionally, show backend response in chat
+      setMessages((prev) => [
+        ...prev,
+        { text: `Backend: ${JSON.stringify(data)}`, isUser: false, timestamp: new Date().getTime() },
+      ]);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        { text: 'Error uploading weekly update: ' + error.message, isUser: false, timestamp: new Date().getTime() },
+      ]);
+    }
+  }
+
+  // Simulate AI response to file upload
+  setTimeout(() => {
+    let responseText = '';
+    if (uploadFolder === 'weekly-updates') {
+      responseText = `I've received your weekly update file "${fileData.name}".\n\nWould you like me to extract key information from this document or help you track specific tasks from it?`;
+    } else if (uploadFolder === 'solution-docs') {
+      responseText = `I've received your solution document "${fileData.name}".\n\nI can help you analyze this document or create additional documentation based on its contents. What would you like to do next?`;
+    } else {
+      responseText = `I've received your file "${fileData.name}".\n\nHow would you like me to help you with this file?`;
+    }
+    const aiResponse = {
+      text: responseText,
+      timestamp: new Date().getTime(),
+      isUser: false,
+    };
+    setMessages((prev) => [...prev, aiResponse]);
+  }, 1000);
+};
 
   return (
     <Box
@@ -128,7 +188,7 @@ const Chat = () => {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        overflow: 'hidden', // Prevent outer scrolling
+        overflow: 'hidden',
       }}
     >
       {/* Header */}
@@ -190,9 +250,9 @@ const Chat = () => {
           flexDirection: 'column',
           alignItems: 'center',
           width: '100%',
-          height: 'calc(100vh - 64px)', // Subtract header height
+          height: 'calc(100vh - 64px)',
           padding: '16px',
-          overflow: 'hidden', // Prevent container scrolling
+          overflow: 'hidden',
         }}
       >
         {/* Messages Area */}
@@ -202,12 +262,12 @@ const Chat = () => {
             flex: 1,
             width: '100%',
             backgroundColor: 'transparent',
-            overflow: 'auto', // Make messages area scrollable
+            overflow: 'auto',
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',
             marginBottom: '16px',
-            height: 'calc(100% - 120px)', // Reserve space for buttons and input
+            height: 'calc(100% - 120px)',
           }}
           className="chat-scrollable"
         >
@@ -218,6 +278,11 @@ const Chat = () => {
               isAI={!message.isUser}
             />
           ))}
+          {loading && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+              <CircularProgress size={28} sx={{ color: '#1976d2' }} />
+            </Box>
+          )}
           <div ref={messagesEndRef} />
         </Paper>
 
@@ -277,4 +342,7 @@ const Chat = () => {
   );
 };
 
-export default Chat; 
+export default Chat;
+
+
+
