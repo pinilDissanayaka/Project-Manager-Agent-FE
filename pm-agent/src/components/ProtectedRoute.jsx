@@ -5,6 +5,17 @@ import { useAuth } from '../contexts/AuthContext';
 
 const ProtectedRoute = () => {
   const { currentUser, loading } = useAuth();
+  // Check session expiry (24h) and clear if expired
+  if (!loading) {
+    const expiry = Number(localStorage.getItem('session_expiry') || '0');
+    if (Date.now() > expiry) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('thread_id');
+      localStorage.removeItem('session_expiry');
+      return <Navigate to="/login" replace />;
+    }
+  }
 
   if (loading) {
     return (
@@ -25,4 +36,4 @@ const ProtectedRoute = () => {
   return currentUser ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;

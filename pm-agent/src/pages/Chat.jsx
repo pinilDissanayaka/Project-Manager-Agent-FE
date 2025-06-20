@@ -51,6 +51,7 @@ const Chat = () => {
 
   // Send message to FastAPI backend
   const handleSendMessage = async (messageText) => {
+    // Determine user ID: use Firebase UID or fallback to stored backend user_id
     const uid = currentUser?.uid || localStorage.getItem('user_id');
     if (!uid) {
       setMessages((prev) => [
@@ -60,13 +61,25 @@ const Chat = () => {
       return;
     }
 
-    const userMessage = { text: messageText, isUser: true, timestamp: new Date().getTime() };
+    // Add user message to UI
+    const userMessage = {
+      text: messageText,
+      isUser: true,
+      timestamp: new Date().getTime(),
+    };
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
     try {
       const token = localStorage.getItem('access_token');
-      const payload = { user_id: uid, message: messageText, thread_id: 3 };
+      // Read per-session thread ID from localStorage
+      const threadId = parseInt(localStorage.getItem('thread_id') || '0', 10);
+      console.log('Sending message:', messageText, 'User ID:', uid, 'Thread ID:', threadId);
+      const payload = {
+        user_id: uid,
+        message: messageText,
+        thread_id: threadId,
+      };
 
       const res = await fetch('http://localhost:8000/chat/', {
         method: 'POST',
@@ -172,7 +185,7 @@ const Chat = () => {
           >
             <Typography sx={{ fontWeight: 'bold', color: 'white' }}>PM</Typography>
           </Box>
-          <Typography variant="h6">THE RISE</Typography>
+          <Typography variant="h6">THE RISE TECH</Typography>
         </Box>
         <IconButton 
           onClick={handleSettingsClick}

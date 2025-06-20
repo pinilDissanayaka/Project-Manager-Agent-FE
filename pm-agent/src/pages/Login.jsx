@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
+import bgImage from '../assets/bg.jpeg';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -37,7 +38,13 @@ const Login = () => {
       // Store user ID for file uploads
       const userId = res.data.user?.uid || res.data.user?.id;
       if (userId) localStorage.setItem('user_id', userId);
-      
+      // Generate per-session random thread ID
+      const sessionThreadId = Math.floor(Math.random() * 100000000);
+      localStorage.setItem('thread_id', sessionThreadId);
+      // Set session expiry 24 hours from now
+      const expiry = Date.now() + 24 * 60 * 60 * 1000;
+      localStorage.setItem('session_expiry', expiry.toString());
+
       console.log('Login successful:', res.data.user);
 
       setCurrentUser(res.data.user);
@@ -73,6 +80,12 @@ const Login = () => {
       // Store user ID for file uploads
       const emailUserId = res.data.user?.uid || res.data.user?.id || email;
       localStorage.setItem('user_id', emailUserId);
+      // Set session expiry 24 hours from now
+      const expiry2 = Date.now() + 24 * 60 * 60 * 1000;
+      localStorage.setItem('session_expiry', expiry2.toString());
+      // Generate per-session random thread ID
+      const sessionThreadId2 = Math.floor(Math.random() * 100000000);
+      localStorage.setItem('thread_id', sessionThreadId2);
       // Optionally, set user info if returned by backend
       if (res.data.user) {
         setCurrentUser(res.data.user);
@@ -92,7 +105,9 @@ const Login = () => {
   return (
     <Box
       sx={{
-        backgroundColor: '#0A1929',
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
         minHeight: '100vh',
         width: '100%',
         display: 'flex',
