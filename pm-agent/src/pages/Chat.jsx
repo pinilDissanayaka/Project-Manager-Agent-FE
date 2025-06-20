@@ -51,7 +51,6 @@ const Chat = () => {
 
   // Send message to FastAPI backend
   const handleSendMessage = async (messageText) => {
-    // Determine user ID: use Firebase UID or fallback to stored backend user_id
     const uid = currentUser?.uid || localStorage.getItem('user_id');
     if (!uid) {
       setMessages((prev) => [
@@ -61,23 +60,13 @@ const Chat = () => {
       return;
     }
 
-    // Add user message to UI
-    const userMessage = {
-      text: messageText,
-      isUser: true,
-      timestamp: new Date().getTime(),
-    };
+    const userMessage = { text: messageText, isUser: true, timestamp: new Date().getTime() };
     setMessages((prev) => [...prev, userMessage]);
     setLoading(true);
 
     try {
       const token = localStorage.getItem('access_token');
-      console.log('Sending message:', messageText, 'User ID:', uid);
-      const payload = {
-        user_id: uid,
-        message: messageText,
-        thread_id: 3,
-      };
+      const payload = { user_id: uid, message: messageText, thread_id: 3 };
 
       const res = await fetch('http://localhost:8000/chat/', {
         method: 'POST',
@@ -94,13 +83,7 @@ const Chat = () => {
       }
 
       const data = await res.json();
-
-      // Add AI response to UI
-      const aiMessage = {
-        text: data.response,
-        isUser: false,
-        timestamp: new Date().getTime(),
-      };
+      const aiMessage = { text: data.response, isUser: false, timestamp: new Date().getTime() };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       setMessages((prev) => [
@@ -127,67 +110,29 @@ const Chat = () => {
   };
 
   // Handle successful file upload
- const handleUploadSuccess = async (fileData) => {
-  // Show file info in chat
-  const fileMessage = {
-    text: `Uploaded file: ${fileData.name}\nType: ${fileData.type}\nSize: ${(fileData.size / 1024).toFixed(2)} KB`,
-    timestamp: new Date().getTime(),
-    isUser: true,
-    fileData: fileData,
-  };
-  setMessages((prev) => [...prev, fileMessage]);
-
-  // Only upload if it's a weekly update
-  if (uploadFolder === 'weekly-updates') {
-    const formData = new FormData();
-    formData.append("user_id", currentUser.uid);
-    formData.append("file", fileData);
-
-    try {
-      const token = localStorage.getItem('access_token');
-      const res = await fetch("http://localhost:8000/upload_weekly_update", {
-        method: "POST",
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
-        body: formData,
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || 'Upload failed');
-      }
-      const data = await res.json();
-      // Optionally, show backend response in chat
-      setMessages((prev) => [
-        ...prev,
-        { text: `Backend: ${JSON.stringify(data)}`, isUser: false, timestamp: new Date().getTime() },
-      ]);
-    } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        { text: 'Error uploading weekly update: ' + error.message, isUser: false, timestamp: new Date().getTime() },
-      ]);
-    }
-  }
-
-  // Simulate AI response to file upload
-  setTimeout(() => {
-    let responseText = '';
-    if (uploadFolder === 'weekly-updates') {
-      responseText = `I've received your weekly update file "${fileData.name}".\n\nWould you like me to extract key information from this document or help you track specific tasks from it?`;
-    } else if (uploadFolder === 'solution-docs') {
-      responseText = `I've received your solution document "${fileData.name}".\n\nI can help you analyze this document or create additional documentation based on its contents. What would you like to do next?`;
-    } else {
-      responseText = `I've received your file "${fileData.name}".\n\nHow would you like me to help you with this file?`;
-    }
-    const aiResponse = {
-      text: responseText,
+  const handleUploadSuccess = (fileData) => {
+    // Show file info in chat
+    const fileMessage = {
+      text: `Uploaded file: ${fileData.name}\nType: ${fileData.type}\nSize: ${(fileData.size / 1024).toFixed(2)} KB`,
       timestamp: new Date().getTime(),
-      isUser: false,
+      isUser: true
     };
-    setMessages((prev) => [...prev, aiResponse]);
-  }, 1000);
-};
+    setMessages((prev) => [...prev, fileMessage]);
+
+    // Simulate AI response to file upload
+    setTimeout(() => {
+      let responseText = '';
+      if (uploadFolder === 'weekly-updates') {
+        responseText = `I've received your weekly update file "${fileData.name}".\n\nWould you like me to extract key information from this document or help you track specific tasks from it?`;
+      } else if (uploadFolder === 'solution-docs') {
+        responseText = `I've received your solution document "${fileData.name}".\n\nI can help you analyze this document or create additional documentation based on its contents. What would you like to do next?`;
+      } else {
+        responseText = `I've received your file "${fileData.name}".\n\nHow would you like me to help you with this file?`;
+      }
+      const aiResponse = { text: responseText, timestamp: new Date().getTime(), isUser: false };
+      setMessages((prev) => [...prev, aiResponse]);
+    }, 1000);
+  };
 
   return (
     <Box
@@ -354,6 +299,7 @@ const Chat = () => {
 };
 
 export default Chat;
+
 
 
 
