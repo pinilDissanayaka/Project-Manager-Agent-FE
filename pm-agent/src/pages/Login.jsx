@@ -136,7 +136,7 @@ const Login = () => {
           </Box>
 
           <Typography variant="h4" component="h1" gutterBottom>
-            Project Manager
+            THE RISE PROJECTS
           </Typography>
 
           <Typography variant="body1" sx={{ mb: 3, color: 'rgba(255, 255, 255, 0.7)' }}>

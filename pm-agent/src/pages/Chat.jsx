@@ -123,9 +123,9 @@ const Chat = () => {
     setTimeout(() => {
       let responseText = '';
       if (uploadFolder === 'weekly-updates') {
-        responseText = `I've received your weekly update file "${fileData.name}".\n\nWould you like me to extract key information from this document or help you track specific tasks from it?`;
+        responseText = `I've received your weekly update file "${fileData.name}".\n`;
       } else if (uploadFolder === 'solution-docs') {
-        responseText = `I've received your solution document "${fileData.name}".\n\nI can help you analyze this document or create additional documentation based on its contents. What would you like to do next?`;
+        responseText = `I've received your solution document "${fileData.name}".\n`;
       } else {
         responseText = `I've received your file "${fileData.name}".\n\nHow would you like me to help you with this file?`;
       }
@@ -172,7 +172,7 @@ const Chat = () => {
           >
             <Typography sx={{ fontWeight: 'bold', color: 'white' }}>PM</Typography>
           </Box>
-          <Typography variant="h6">Project Manager</Typography>
+          <Typography variant="h6">THE RISE</Typography>
         </Box>
         <IconButton 
           onClick={handleSettingsClick}
