@@ -6,16 +6,20 @@ import {
   Button, 
   CircularProgress, 
   IconButton, 
-  Paper 
+  Paper, 
+  TextField 
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CloseIcon from '@mui/icons-material/Close';
-import { uploadFile } from '../utils/firebaseUtils';
 
 const FileUploadModal = ({ open, onClose, title, folder, onUploadSuccess }) => {
+  // Retrieve user ID saved in localStorage at login
+  const userId = localStorage.getItem('user_id');
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [projectName, setProjectName] = useState('');
+  const [projectDescription, setProjectDescription] = useState('');
   const fileInputRef = useRef(null);
   
   // Handle drag events
@@ -50,31 +54,41 @@ const FileUploadModal = ({ open, onClose, title, folder, onUploadSuccess }) => {
   
   // Handle file upload
   const handleUpload = async () => {
-    if (!selectedFile) return;
-    
+    if (!selectedFile || !userId || (folder === 'solution-docs' && (!projectName || !projectDescription))) {
+      console.error('Required fields missing or file not selected');
+      return;
+    }
     try {
       setLoading(true);
-      const userId = 'user123'; // Replace with actual user ID from auth context
-      const timestamp = new Date().getTime();
-      const filePath = `${folder}/${userId}_${timestamp}_${selectedFile.name}`;
-      
-      const downloadURL = await uploadFile(selectedFile, filePath);
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      if (folder === 'solution-docs') {
+        formData.append('project_name', projectName);
+        formData.append('project_description', projectDescription);
+      }
+      console.log('Uploading file:', userId);
+      formData.append('file', selectedFile);
+      // choose endpoint based on folder
+      const endpoint = folder === 'solution-docs'
+        ? 'http://localhost:8000/upload_solution_doument'
+        : 'http://localhost:8000/upload_weekly_update';
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
       
       if (onUploadSuccess) {
         onUploadSuccess({
           name: selectedFile.name,
-          url: downloadURL,
           type: selectedFile.type,
           size: selectedFile.size,
-          path: filePath,
-          uploadedAt: new Date().toISOString()
+          file_saved_as: data.file_saved_as,
         });
       }
-      
       onClose();
     } catch (error) {
       console.error('Error uploading file:', error);
-      // Show error message to user
     } finally {
       setLoading(false);
     }
@@ -158,6 +172,28 @@ const FileUploadModal = ({ open, onClose, title, folder, onUploadSuccess }) => {
           )}
         </Box>
         
+        {/* Project Name/Description Fields */}
+        {folder === 'solution-docs' && (
+          <Box sx={{ mb: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Project Name *"
+              value={projectName}
+              onChange={e => setProjectName(e.target.value)}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Project Description *"
+              value={projectDescription}
+              onChange={e => setProjectDescription(e.target.value)}
+              required
+              fullWidth
+              multiline
+              rows={3}
+            />
+          </Box>
+        )}
+        
         {/* Action Buttons */}
         <Box display="flex" justifyContent="flex-end" gap={2}>
           <Button 
@@ -181,4 +217,4 @@ const FileUploadModal = ({ open, onClose, title, folder, onUploadSuccess }) => {
   );
 };
 
-export default FileUploadModal; 
+export default FileUploadModal;

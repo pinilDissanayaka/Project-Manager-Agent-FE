@@ -51,10 +51,12 @@ const Chat = () => {
 
   // Send message to FastAPI backend
   const handleSendMessage = async (messageText) => {
-    if (!currentUser) {
+    // Determine user ID: use Firebase UID or fallback to stored backend user_id
+    const uid = currentUser?.uid || localStorage.getItem('user_id');
+    if (!uid) {
       setMessages((prev) => [
         ...prev,
-        { text: 'You must be logged in to chat.', isUser: false, timestamp: new Date().getTime() },
+        { text: 'You must be logged in to chat.', isUser: false, timestamp: Date.now() },
       ]);
       return;
     }
@@ -70,10 +72,11 @@ const Chat = () => {
 
     try {
       const token = localStorage.getItem('access_token');
+      console.log('Sending message:', messageText, 'User ID:', uid);
       const payload = {
-        user_id: currentUser.uid,
+        user_id: uid,
         message: messageText,
-        thread_id: null,
+        thread_id: 3,
       };
 
       const res = await fetch('http://localhost:8000/chat/', {
@@ -141,10 +144,18 @@ const Chat = () => {
     formData.append("file", fileData);
 
     try {
-      const res = await fetch("http://localhost:8000/upload_daily_update", {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch("http://localhost:8000/upload_weekly_update", {
         method: "POST",
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: formData,
       });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Upload failed');
+      }
       const data = await res.json();
       // Optionally, show backend response in chat
       setMessages((prev) => [

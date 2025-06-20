@@ -34,9 +34,14 @@ const Login = () => {
 
       // Store the returned JWT token
       localStorage.setItem('access_token', res.data.access_token);
-      setCurrentUser(res.data.user);
+      // Store user ID for file uploads
+      const userId = res.data.user?.uid || res.data.user?.id;
+      if (userId) localStorage.setItem('user_id', userId);
+      
       console.log('Login successful:', res.data.user);
-      console.log('User data:', currentUser);
+
+      setCurrentUser(res.data.user);
+      
 
       // Redirect to the chat page
       navigate('/chat', { replace: true });
@@ -58,10 +63,27 @@ const Login = () => {
     try {
       setError('');
       setLoading(true);
-      // Handle email login logic here
-      navigate('/chat');
+      // Call your backend for authentication
+      const res = await axios.post('http://localhost:8000/login', {
+        username: email,
+        password: password,
+      });
+      // Store the returned JWT token
+      localStorage.setItem('access_token', res.data.access_token);
+      // Store user ID for file uploads
+      const emailUserId = res.data.user?.uid || res.data.user?.id || email;
+      localStorage.setItem('user_id', emailUserId);
+      // Optionally, set user info if returned by backend
+      if (res.data.user) {
+        setCurrentUser(res.data.user);
+      } else {
+        // If backend does not return user, you may want to fetch user info here
+        setCurrentUser({ email });
+      }
+      // Redirect to the chat page
+      navigate('/chat', { replace: true });
     } catch (error) {
-      setError('Failed to sign in: ' + error.message);
+      setError('Failed to sign in: ' + (error.response?.data?.detail || error.message));
     } finally {
       setLoading(false);
     }

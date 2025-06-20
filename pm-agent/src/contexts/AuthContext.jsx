@@ -73,6 +73,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated: !!currentUser,
     loading,
     error,
+    setCurrentUser, // <-- Add this so Login.jsx can update user after login
   };
 
   return (
@@ -82,4 +83,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export default AuthContext; 
+
+
+export default AuthContext;
