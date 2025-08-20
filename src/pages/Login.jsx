@@ -134,7 +134,6 @@ const Login = () => {
         >
           <Box
             sx={{
-              backgroundColor: '#1976d2',
               borderRadius: '8px',
               padding: '12px',
               mb: 3,
@@ -146,7 +145,7 @@ const Login = () => {
             }}
           >
             <Typography variant="h4" sx={{ fontWeight: 'bold', color: 'white' }}>
-              PM
+              <img src="/rise.svg" alt="Logo" style={{ width: '100%', height: 'auto' }} />
             </Typography>
           </Box>
 
@@ -205,7 +204,7 @@ const Login = () => {
                 '& .MuiOutlinedInput-root': {
                   '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.3)' },
                   '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.5)' },
-                  '&.Mui-focused fieldset': { borderColor: '#1976d2' },
+                  '&.Mui-focused fieldset': { borderColor: '#233241ff' },
                 },
               }}
             />

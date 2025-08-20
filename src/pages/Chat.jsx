@@ -3,6 +3,7 @@ import { Box, Container, Typography, Paper, Button, Grid, Menu, MenuItem, IconBu
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SettingsIcon from '@mui/icons-material/Settings';
+import AddIcon from '@mui/icons-material/Add';
 import ChatInput from '../components/ChatInput';
 import ChatMessage from '../components/ChatMessage';
 import FileUploadModal from '../components/FileUploadModal';
@@ -25,12 +26,40 @@ const Chat = () => {
   const handleSettingsClick = (event) => setAnchorEl(event.currentTarget);
   const handleSettingsClose = () => setAnchorEl(null);
 
+  // Handle new chat - creates new thread ID and clears messages
+  const handleNewChat = () => {
+    // Generate new random thread ID
+    const newThreadId = Math.floor(Math.random() * 100000000);
+    localStorage.setItem('thread_id', newThreadId);
+    
+    // Clear current messages and add initial AI greeting
+    setMessages([{
+      text: "Hello! I'm your AI project management assistant. I can help you track progress, analyze weekly updates, and manage your projects. How can I assist you today?",
+      timestamp: new Date().getTime(),
+      isUser: false,
+    }]);
+    
+    console.log('New chat started with Thread ID:', newThreadId);
+  };
+
   const handleLogout = async () => {
     try {
+      // Clear local storage first
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('user_id');
+      localStorage.removeItem('thread_id');
+      localStorage.removeItem('session_expiry');
+      
+      // Sign out from Firebase
       await signOut();
-      navigate('/login');
+      
+      // Navigate to login page
+      navigate('/login', { replace: true });
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if signOut fails, clear storage and redirect
+      localStorage.clear();
+      navigate('/login', { replace: true });
     }
     handleSettingsClose();
   };
@@ -148,79 +177,109 @@ const Chat = () => {
   };
 
   return (
-    <Box
-      sx={{
-        backgroundColor: '#0A1929',
-        height: '100vh',
-        width: '100%',
-        color: 'white',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        overflow: 'hidden',
-      }}
-    >
+      <Box
+        sx={{
+          backgroundColor: '#000000ff',
+          minHeight: '100vh',
+          width: '100%',
+          color: 'white',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          overflow: 'hidden',
+        }}
+      >
       {/* Header */}
       <Box
         sx={{
           padding: '12px 24px',
           width: '100%',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          borderBottom: '1px solid rgba(42, 110, 122, 0.06)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Box
             sx={{
-              backgroundColor: '#1976d2',
-              borderRadius: '6px',
-              padding: '6px',
-              mr: 1,
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.6), rgba(0,0,0,0.4))',
+              borderRadius: '8px',
+              padding: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
+              boxShadow: '0 4px 18px rgba(0,0,0,0.6)'
             }}
           >
-            <Typography sx={{ fontWeight: 'bold', color: 'white' }}>PM</Typography>
+            <img src="/rise.svg" alt="Logo" style={{ width: 44, height: 'auto' }} />
           </Box>
-          <Typography variant="h6">THE RISE TECH</Typography>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>THE RISE TECH</Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.6)' }}>Project Management Assistant</Typography>
+          </Box>
         </Box>
-        <IconButton 
-          onClick={handleSettingsClick}
-          sx={{ color: 'white' }}
-        >
-          <SettingsIcon />
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleSettingsClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-        >
-          <MenuItem onClick={handleLogout}>Logout</MenuItem>
-        </Menu>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton 
+            onClick={handleNewChat} 
+            sx={{ 
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              }
+            }}
+            title="New Chat"
+          >
+            <AddIcon />
+          </IconButton>
+
+          <IconButton onClick={handleSettingsClick} sx={{ color: 'white' }}>
+            <SettingsIcon />
+          </IconButton>
+          <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={handleSettingsClose}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+            transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            PaperProps={{
+              sx: {
+                backgroundColor: '#000000',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '8px',
+                mt: 1,
+              }
+            }}
+          >
+            <MenuItem 
+              onClick={handleLogout}
+              sx={{
+                color: 'white',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                },
+              }}
+            >
+              Logout
+            </MenuItem>
+          </Menu>
+        </Box>
       </Box>
 
       {/* Chat Container */}
       <Container 
-        maxWidth="md" 
+        maxWidth={false}
+        disableGutters
         sx={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
+          alignItems: 'stretch',
           width: '100%',
           height: 'calc(100vh - 64px)',
-          padding: '16px',
+          padding: '12px 16px',
           overflow: 'hidden',
         }}
       >
@@ -249,7 +308,7 @@ const Chat = () => {
           ))}
           {loading && (
             <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-              <CircularProgress size={28} sx={{ color: '#1976d2' }} />
+              <CircularProgress size={28} sx={{ color: '#ffffff' }} />
             </Box>
           )}
           <div ref={messagesEndRef} />
@@ -263,13 +322,13 @@ const Chat = () => {
               startIcon={<CalendarTodayIcon />}
               onClick={handleWeeklyUpdate}
               sx={{
-                color: '#2196f3',
-                borderColor: '#2196f3',
-                '&:hover': {
-                  borderColor: '#1976d2',
-                  backgroundColor: 'rgba(33, 150, 243, 0.08)',
-                },
-              }}
+                  color: '#ffffff',
+                  borderColor: 'rgba(255,255,255,0.08)',
+                  '&:hover': {
+                    borderColor: 'rgba(255,255,255,0.16)',
+                    backgroundColor: 'rgba(24, 175, 221, 0.02)',
+                  },
+                }}
             >
               Weekly Update
             </Button>
@@ -280,11 +339,11 @@ const Chat = () => {
               startIcon={<DescriptionIcon />}
               onClick={handleSolutionDoc}
               sx={{
-                color: '#2196f3',
-                borderColor: '#2196f3',
+                color: '#ffffff',
+                borderColor: 'rgba(255,255,255,0.08)',
                 '&:hover': {
-                  borderColor: '#1976d2',
-                  backgroundColor: 'rgba(33, 150, 243, 0.08)',
+                  borderColor: 'rgba(255,255,255,0.16)',
+                  backgroundColor: 'rgba(255,255,255,0.02)',
                 },
               }}
             >

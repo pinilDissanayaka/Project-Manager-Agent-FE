@@ -6,19 +6,20 @@ import Chat from './pages/Chat';
 import Login from './pages/Login';
 import './App.css';
 
-// Create a custom dark theme
+// Create a custom dark theme (black primary + teal accent)
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#1976d2',
+      main: '#000000', // deep black primary
     },
     secondary: {
-      main: '#f50057',
+      main: '#000000', // black secondary for a fully black schema
+      contrastText: '#ffffff',
     },
     background: {
-      default: '#0A1929',
-      paper: '#132f4c',
+      default: '#050505',
+      paper: '#0f1720',
     },
   },
   typography: {

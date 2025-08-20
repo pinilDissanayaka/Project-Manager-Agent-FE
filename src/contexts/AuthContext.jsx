@@ -46,6 +46,37 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    // Check for existing session before Firebase auth state
+    const checkExistingSession = () => {
+      const token = localStorage.getItem('access_token');
+      const expiry = localStorage.getItem('session_expiry');
+      const userId = localStorage.getItem('user_id');
+      
+      if (token && expiry && userId) {
+        const now = Date.now();
+        if (now < parseInt(expiry)) {
+          // Session is still valid, create a minimal user object
+          setCurrentUser({
+            uid: userId,
+            email: userId.includes('@') ? userId : null,
+            displayName: '',
+          });
+          setLoading(false);
+          return true;
+        } else {
+          // Session expired, clear localStorage
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('user_id');
+          localStorage.removeItem('thread_id');
+          localStorage.removeItem('session_expiry');
+        }
+      }
+      return false;
+    };
+
+    // First check for existing session
+    const hasValidSession = checkExistingSession();
+    
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
         if (user) {
@@ -53,7 +84,8 @@ export const AuthProvider = ({ children }) => {
           await user.getIdToken(true);
           setCurrentUser(user);
           await saveUserToFirestore(user);
-        } else {
+        } else if (!hasValidSession) {
+          // Only set to null if we don't have a valid session
           setCurrentUser(null);
         }
       } catch (error) {
@@ -61,7 +93,9 @@ export const AuthProvider = ({ children }) => {
         setError(error.message);
         setCurrentUser(null);
       } finally {
-        setLoading(false);
+        if (!hasValidSession) {
+          setLoading(false);
+        }
       }
     });
 

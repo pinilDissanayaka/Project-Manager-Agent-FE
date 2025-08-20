@@ -58,13 +58,13 @@ const ChatInput = ({ onSendMessage }) => {
         type="submit"
         color="primary"
         sx={{
-          backgroundColor: '#2196f3',
+          backgroundColor: '#000000ff',
           borderRadius: '50%',
           width: '40px',
           height: '40px',
           minWidth: '40px',  // Ensure consistent width
           '&:hover': {
-            backgroundColor: '#1976d2',
+            backgroundColor: '#000000ff',
           },
         }}
       >
