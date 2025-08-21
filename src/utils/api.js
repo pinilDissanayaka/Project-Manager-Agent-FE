@@ -2,7 +2,8 @@ import React from 'react';
 import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 
-const apiUrl = 'http://localhost:8000/auth/google';  // Your FastAPI backend URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const apiUrl = `${API_BASE_URL}/auth/google`;  // Your FastAPI backend URL
 
 const handleLoginSuccess = (response) => {
   // Send the Google token to the FastAPI backend for verification

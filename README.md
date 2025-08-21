@@ -42,7 +42,7 @@ npm install
 3. Create a `.env` file in the root directory and add your Firebase configuration:
 ```
 # API Configuration
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_BASE_URL= "
 
 # Google OAuth Configuration
 VITE_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com

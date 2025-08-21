@@ -12,6 +12,8 @@ import {
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CloseIcon from '@mui/icons-material/Close';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const FileUploadModal = ({ open, onClose, title, folder, onUploadSuccess }) => {
   // Retrieve user ID saved in localStorage at login
   const userId = localStorage.getItem('user_id');
@@ -70,8 +72,8 @@ const FileUploadModal = ({ open, onClose, title, folder, onUploadSuccess }) => {
       formData.append('file', selectedFile);
       // choose endpoint based on folder
       const endpoint = folder === 'solution-docs'
-        ? 'http://localhost:8000/upload_solution_doument'
-        : 'http://localhost:8000/upload_weekly_update';
+        ? `${API_BASE_URL}/upload_solution_document`
+        : `${API_BASE_URL}/upload_weekly_update`;
       const res = await fetch(endpoint, {
         method: 'POST',
         body: formData,

@@ -11,6 +11,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { signOut } from '../utils/firebaseUtils';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const Chat = () => {
   const [messages, setMessages] = useState([]);
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -110,7 +112,7 @@ const Chat = () => {
         thread_id: threadId,
       };
 
-      const res = await fetch('http://localhost:8000/chat/', {
+      const res = await fetch(`${API_BASE_URL}/chat/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -6,6 +6,8 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../contexts/AuthContext';
 import bgImage from '../assets/bg.jpeg';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +31,7 @@ const Login = () => {
       setLoading(true);
 
       // Send the Google OAuth token to the backend for validation
-      const res = await axios.post('http://localhost:8000/auth/google', {
+      const res = await axios.post(`${API_BASE_URL}/auth/google`, {
         credential: response.credential,
       });
 
@@ -71,7 +73,7 @@ const Login = () => {
       setError('');
       setLoading(true);
       // Call your backend for authentication
-      const res = await axios.post('http://localhost:8000/login', {
+      const res = await axios.post(`${API_BASE_URL}/login`, {
         username: email,
         password: password,
       });
